@@ -1,8 +1,35 @@
+import os
 import math
+import torch
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 from models.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
-# from batchnorm import SynchronizedBatchNorm2d
+try: # for torchvision<0.4
+    from torchvision.models.utils import load_state_dict_from_url
+except: # for torchvision>=0.4
+    from torch.hub import load_state_dict_from_url
+
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print("Using device:", device)
+
+# __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
+#            'resnet152', 'resnext50_32x4d', 'resnext101_32x8d',
+#            'wide_resnet50_2', 'wide_resnet101_2']
+
+model_urls = {
+    'resnet50': '/glb/hou/pt.sgs/data/ml_ai_us/uspcjc/SimCLR/runs/May30_14-39-10_houcy1-n-gp193a60.americas.shell.com/checkpoint_0100.pth.tar'
+}
+
+def check_pth(arch):
+    CKPT_PATH = model_urls[arch]
+    if os.path.exists(CKPT_PATH):
+        print(f"Backbone ResNET Pretrained weights at: {CKPT_PATH}, only usable for Resnet50")
+    else:
+        print("No backbone checkpoint found for HRNetv2, please set pretrained=False when calling model")
+    return CKPT_PATH
+    # HRNetv2-48 not available yet, but you can train the whole model from scratch.
+
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -136,14 +163,26 @@ class ResNet(nn.Module):
                 m.bias.data.zero_()
 
     def _load_pretrained_model(self):
-        pretrain_dict = model_zoo.load_url('https://download.pytorch.org/models/resnet101-5d3b4d8f.pth')
-        model_dict = {}
-        state_dict = self.state_dict()
-        for k, v in pretrain_dict.items():
-            if k in state_dict:
-                model_dict[k] = v
-        state_dict.update(model_dict)
-        self.load_state_dict(state_dict)
+        # pretrain_dict = model_zoo.load_url('https://download.pytorch.org/models/resnet101-5d3b4d8f.pth')
+        # model_dict = {}
+        # state_dict = self.state_dict()
+        # for k, v in pretrain_dict.items():
+        #     if k in state_dict:
+        #         model_dict[k] = v
+        # state_dict.update(model_dict)
+        # self.load_state_dict(state_dict)
+        CKPT_PATH = check_pth('resnet50')
+        checkpoint = torch.load('/glb/hou/pt.sgs/data/ml_ai_us/uspcjc/SimCLR/runs/May30_13-43-09_houcy1-n-gp193a03.americas.shell.com/checkpoint_1000.pth.tar', map_location=device)
+        state_dict = checkpoint['state_dict']
+        for k in list(state_dict.keys()):
+
+            if k.startswith('backbone.'):
+                if k.startswith('backbone') and not k.startswith('backbone.fc'):
+                    state_dict[k[len("backbone."):]] = state_dict[k]
+            del state_dict[k]
+            log = self.load_state_dict(state_dict, strict=False)
+            # assert log.missing_keys == ['fc.weight', 'fc.bias']
+            # self.load_state_dict(checkpoint['state_dict'])
 
 def ResNet101(output_stride, BatchNorm, pretrained=True):
     """Constructs a ResNet-101 model.
@@ -153,9 +192,23 @@ def ResNet101(output_stride, BatchNorm, pretrained=True):
     model = ResNet(Bottleneck, [3, 4, 23, 3], output_stride, BatchNorm, pretrained=pretrained)
     return model
 
+def ResNet50(output_stride, BatchNorm, pretrained=True):
+    r"""ResNet-50 model from
+    `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        progress (bool): If True, displays a progress bar of the download to stderr
+    """
+    model = ResNet(Bottleneck, [3, 4, 6, 3], output_stride, BatchNorm, pretrained=pretrained)
+    return model
+    # return _resnet('resnet50', Bottleneck, [3, 4, 6, 3], pretrained, progress,
+    #                **kwargs)
+
 if __name__ == "__main__":
     import torch
-    model = ResNet101(BatchNorm=nn.BatchNorm2d, pretrained=True, output_stride=8)
+    # model = ResNet101(BatchNorm=nn.BatchNorm2d, pretrained=False, output_stride=8)
+    model = ResNet50(BatchNorm=nn.BatchNorm2d, pretrained=True, output_stride=8)
     input = torch.rand(1, 3, 512, 512)
     output, low_level_feat = model(input)
     print(output.size())

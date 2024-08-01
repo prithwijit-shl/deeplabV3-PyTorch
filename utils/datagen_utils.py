@@ -32,8 +32,8 @@ def decode_segmap(label_mask, dataset, plot=False):
         n_classes = 13
         label_colours = get_deepfashion_labels()
 
-    elif dataset == 'braintumor':
-        n_classes = 3
+    elif dataset == 'all':
+        n_classes = 1
         label_colours = get_braintumor_labels()
 
 
@@ -134,10 +134,7 @@ def get_deepfashion_labels():
         [119, 11, 32]])
 
 def get_braintumor_labels():
-    return np.array([
-        [128, 64, 128],
-        [244, 35, 232],
-        [70, 70, 70]])
+    return np.array([[128, 0, 0],[0, 128, 0]])
 
 
 

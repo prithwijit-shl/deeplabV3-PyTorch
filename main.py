@@ -7,7 +7,8 @@ import yaml
 
 from trainers.trainer import Trainer
 from predictors.predictor import Predictor
-
+from PIL import Image
+from matplotlib import pyplot as plt
 
 def train(args):
 
@@ -42,7 +43,7 @@ def predict_on_test_set(args):
 
     config['network']['use_cuda'] = config['network']['use_cuda'] and torch.cuda.is_available()
 
-    predictor = Predictor(config, checkpoint_path='./experiments/checkpoint_best.pth.tar')
+    predictor = Predictor(config, checkpoint_path='experiments/checkpoint_best.pth.tar')
 
     predictor.inference_on_test_set()
 
@@ -60,10 +61,9 @@ def predict(args):
 
     config['network']['use_cuda'] = config['network']['use_cuda'] and torch.cuda.is_available()
 
-    predictor = Predictor(config, checkpoint_path='./experiments/checkpoint_last.pth.tar')
+    predictor = Predictor(config, checkpoint_path='./checkpoint_best.pth.tar')
 
     image, prediction = predictor.segment_image(filename)
-
     return image, prediction
 #    print(np.max(prediction))
 
@@ -90,7 +90,21 @@ if __name__ == "__main__":
         if args.filename is None:
             raise Exception('missing --filename FILENAME')
         else:
-            predict(args)
+            image, prediction = predict(args)
+            fig, axs = plt.subplots(1, 2, figsize=(16, 16))
+
+            images = []
+
+            axs[0].set_title("Image")
+            axs[1].set_title("Predictions")
+
+            images.append(axs[0].imshow(image.astype(int)))
+            # images.append(axs[1].imshow(annotation, cmap=plt.get_cmap('nipy_spectral'), vmin=0, vmax=num_classes))
+            images.append(axs[1].imshow(prediction, cmap=plt.get_cmap('nipy_spectral'), vmin=0, vmax=2))
+            cbar = fig.colorbar(images[1], ax=axs, orientation='horizontal', ticks=[x for x in range(2)], fraction=.1)
+            # cbar.ax.set_xticklabels(list(predictor.categories_dict.keys()), rotation=55)
+
+            plt.show()
 
     elif args.train:
         print('Starting training')

@@ -7,11 +7,13 @@ from data_generators.data_generator import initialize_data_loader
 from models.sync_batchnorm.replicate import patch_replication_callback
 from models.deeplab import DeepLab
 from losses.loss import SegmentationLosses
+from losses.loss import DiceLoss
 from utils.calculate_weights import calculate_weigths_labels
 from utils.lr_scheduler import LR_Scheduler
 from utils.saver import Saver
 from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
+from utils.new_metrics import MeanIoU
 import torch
 import yaml
 
@@ -57,11 +59,13 @@ class Trainer(object):
         else:
             weight = None
 
-        self.criterion = SegmentationLosses(weight=weight, cuda=self.config['network']['use_cuda']).build_loss(mode=self.config['training']['loss_type'])
+        # self.criterion = SegmentationLosses(weight=weight, cuda=self.config['network']['use_cuda']).build_loss(mode=self.config['training']['loss_type'])
+        self.dice_loss = DiceLoss(normalization='sigmoid')
         self.model, self.optimizer = model, optimizer
         
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
+        self.iou = MeanIoU()
         # Define lr scheduler
         self.scheduler = LR_Scheduler(self.config['training']['lr_scheduler'], self.config['training']['lr'],
                                             self.config['training']['epochs'], len(self.train_loader))
@@ -105,12 +109,20 @@ class Trainer(object):
         num_img_tr = len(self.train_loader)
         for i, sample in enumerate(tbar):
             image, target = sample['image'], sample['label']
+            # print(image.size())
             if self.config['network']['use_cuda']:
                 image, target = image.cuda(), target.cuda()
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             output = self.model(image)
-            loss = self.criterion(output, target)
+            # print("output is" ,output)
+            # print("target is" ,target)
+            target = target.unsqueeze(1).float()
+            # print(target.size())
+            # loss = self.criterion(output, target)
+            loss = self.dice_loss (output, target)
+
+            # print("target value is ", output)
             loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
@@ -124,7 +136,7 @@ class Trainer(object):
 
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.config['training']['batch_size'] + image.data.shape[0]))
-        print('Loss: %.3f' % train_loss)
+        # print('Loss: %.3f' % train_loss)
 
         #save last checkpoint
         self.saver.save_checkpoint({
@@ -151,31 +163,36 @@ class Trainer(object):
                 image, target = image.cuda(), target.cuda()
             with torch.no_grad():
                 output = self.model(image)
-            loss = self.criterion(output, target)
+            target = target.unsqueeze(1).float()
+            loss = self.dice_loss (output, target)
+            miou = self.iou(output, target)
             test_loss += loss.item()
             tbar.set_description('Val loss: %.3f' % (test_loss / (i + 1)))
-            pred = output.data.cpu().numpy()
-            target = target.cpu().numpy()
-            pred = np.argmax(pred, axis=1)
+            # pred = output.data.cpu().numpy()
+            # target = target.cpu().numpy()
+            # pred = np.argmax(pred, axis=1)
             # Add batch sample into evaluator
-            self.evaluator.add_batch(target, pred)
+            # self.evaluator.add_batch(target, pred)
+            
 
         # Fast test during the training
-        Acc = self.evaluator.Pixel_Accuracy()
-        Acc_class = self.evaluator.Pixel_Accuracy_Class()
-        mIoU = self.evaluator.Mean_Intersection_over_Union()
-        FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+        # Acc = self.evaluator.Pixel_Accuracy()
+        # Acc_class = self.evaluator.Pixel_Accuracy_Class()
+        # mIoU = self.evaluator.Mean_Intersection_over_Union()
+        # FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
         self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
-        self.writer.add_scalar('val/mIoU', mIoU, epoch)
-        self.writer.add_scalar('val/Acc', Acc, epoch)
-        self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
-        self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
+        # self.writer.add_scalar('val/mIoU', mIoU, epoch)
+        # self.writer.add_scalar('val/Acc', Acc, epoch)
+        # self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
+        # self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
+        self.writer.add_scalar('val/mIoU', miou, epoch)
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.config['training']['batch_size'] + image.data.shape[0]))
-        print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
-        print('Loss: %.3f' % test_loss)
+        print("mIoU:", miou)
+        # print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
+        # print('Loss: %.3f' % test_loss)
 
-        new_pred = mIoU
+        new_pred = miou
         if new_pred > self.best_pred:
             self.best_pred = new_pred
             self.saver.save_checkpoint({
@@ -184,4 +201,4 @@ class Trainer(object):
                 'state_dict': self.model.state_dict(),
                 'optimizer': self.optimizer.state_dict(),
                 'best_pred': self.best_pred,
-            },  is_best = True, filename='checkpoint_best.pth.tar')
+            },  is_best = True, filename='experiments/checkpoint_best.pth.tar')

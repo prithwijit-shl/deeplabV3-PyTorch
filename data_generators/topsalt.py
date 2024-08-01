@@ -9,7 +9,7 @@ from torchvision import transforms
 from preprocessing import custom_transforms as tr
 import random
 
-class DeepFashionSegmentation(Dataset):
+class TopSalt(Dataset):
     """
     DeepFashion dataset
     """
@@ -22,12 +22,12 @@ class DeepFashionSegmentation(Dataset):
                  ):
         super().__init__()
         self._base_dir = config['dataset']['base_path']
-        self._image_dir = os.path.join(self._base_dir, 'train', 'image')
+        self._image_dir = os.path.join(self._base_dir, 'images')
         self._cat_dir = os.path.join(self._base_dir, 'labels')
         self.config = config
         self.split = split
 
-        with open(os.path.join(self._base_dir, 'wsher.json')) as f:
+        with open(os.path.join(self._base_dir, 'full_dataset.json')) as f:
             self.full_dataset = json.load(f)
 
         self.images = []
@@ -94,7 +94,7 @@ class DeepFashionSegmentation(Dataset):
     def transform_tr(self, sample):
         composed_transforms = transforms.Compose([
             tr.RandomHorizontalFlip(),
-            tr.RandomScaleCrop(base_size=self.config['image']['base_size'], crop_size=self.config['image']['crop_size']),
+            # tr.RandomScaleCrop(base_size=self.config['image']['base_size'], crop_size=self.config['image']['crop_size']),
             tr.RandomGaussianBlur(),
             tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             tr.ToTensor()])
@@ -105,7 +105,7 @@ class DeepFashionSegmentation(Dataset):
 
         composed_transforms = transforms.Compose([
 #            tr.FixScaleCrop(crop_size=crop_size),
-            tr.FixScaleCrop(crop_size=self.config['image']['crop_size']),
+            # tr.FixScaleCrop(crop_size=self.config['image']['crop_size']),
 #            tr.FixScaleCrop(crop_size=513),
             tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             tr.ToTensor()])
@@ -116,7 +116,7 @@ class DeepFashionSegmentation(Dataset):
     def preprocess(sample, crop_size=513):
 
         composed_transforms = transforms.Compose([
-            tr.FixScaleCrop(crop_size=crop_size),
+            # tr.FixScaleCrop(crop_size=crop_size),
             tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             tr.ToTensor()])
 
