@@ -9,6 +9,11 @@ You need to add the path to your SimCLR trained backbone ckpt in line 166 of [re
 ```
 checkpoint_path = "/PATH/TO/SIMCLR/checkpoint.ckpt"
 ```
+## Environment
+For this training use conda environment solo
+```
+conda activate solo
+```
 
 ## Train
 
