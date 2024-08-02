@@ -163,7 +163,7 @@ def check_checkpoint_structure(checkpoint_path, model):
 if __name__ == "__main__":
     import torch
     # Replace with your actual checkpoint path
-    checkpoint_path = "/glb/hou/pt.sgs/data/ml_ai_us/uspcjc/codes/solo-learn/trained_models/simclr/lhtzdkhu/simclr-custom-lhtzdkhu-ep=399.ckpt"
+    checkpoint_path = "/PATH/TO/SIMCLR/checkpoint.ckpt"
     model = ResNet18(BatchNorm=nn.BatchNorm2d, checkpoint_path=checkpoint_path, output_stride=8)
     check_checkpoint_structure(checkpoint_path, model)
     input = torch.rand(1, 3, 512, 512)
