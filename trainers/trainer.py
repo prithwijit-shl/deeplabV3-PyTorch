@@ -201,4 +201,4 @@ class Trainer(object):
                 'state_dict': self.model.state_dict(),
                 'optimizer': self.optimizer.state_dict(),
                 'best_pred': self.best_pred,
-            },  is_best = True, filename='experiments/checkpoint_best.pth.tar')
+            },  is_best = True, filename='checkpoint_best.pth.tar')

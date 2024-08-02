@@ -24,10 +24,9 @@ from losses.loss import DiceLoss
 from utils.new_metrics import MeanIoU
 import yaml
 from PIL import Image
-import matplotlib.colors as mcolors
 
 class Predictor():
-    def __init__(self, config,  checkpoint_path='experiments/checkpoint_best.pth.tar'):
+    def __init__(self, config,  checkpoint_path='/glb/hou/pt.sgs/data/ml_ai_us/uspcjc/models/deeplabV3SIMCLR/experiments/checkpoint_best.pth.tar'):
         self.config = config
         self.checkpoint_path = checkpoint_path
 
@@ -56,7 +55,6 @@ class Predictor():
             checkpoint = torch.load(self.checkpoint_path)
         else:
             checkpoint = torch.load(self.checkpoint_path, map_location={'cuda:0': 'cpu'})
-            # checkpoint = torch.load(self.checkpoint_path, map_location={'cuda:0'})
 
 #        print(checkpoint)
         model = torch.nn.DataParallel(model)
@@ -80,7 +78,6 @@ class Predictor():
                 image, target = image.cuda(), target.cuda()
             with torch.no_grad():
                 output = self.model(image)
-                # print(output.shape())
             # loss = self.criterion(output, target)
             labels = target
             target = target.unsqueeze(1).float()
@@ -92,15 +89,8 @@ class Predictor():
             assert output.dim() == 4
             self.normalization = nn.Sigmoid()
             output = self.normalization(output)
-            print_npy = output.cpu().numpy()
-            result_npy = output
-            # result = output
-            output_npy = result_npy.long()
-            prediction_npy = output_npy
-            prediction_npy = prediction_npy.cpu().numpy()
-            output_npy =output_npy.cpu().numpy()
-            # result = output
             result = output > 0.01
+            # result = output
             output = result.long()
             prediction = output
             prediction = prediction.cpu().numpy()
@@ -119,19 +109,11 @@ class Predictor():
                 labels_new = labels[j]
                 labels_new *= 255.
                 images.append(axs[0].imshow(image_new.astype(int)))
-                cmap = mcolors.ListedColormap(['black', 'red'])
-                bounds = [0, 1, 2]  # Define the bounds for the colormap
-                norm = mcolors.BoundaryNorm(bounds, cmap.N)
-                images.append(axs[1].imshow(prediction[j].transpose(1, 2, 0), cmap=cmap, norm=norm))
-                # images.append(axs[1].imshow(prediction[j].transpose(1, 2, 0), cmap=plt.get_cmap('nipy_spectral'), vmin=0, vmax=2))
+                images.append(axs[1].imshow(prediction[j].transpose(1, 2, 0), cmap=plt.get_cmap('nipy_spectral'), vmin=0, vmax=2))
                 images.append(axs[2].imshow(labels_new.astype(int)))
                     # Construct the full path for saving the plot
-                os.makedirs('predictions/images', exist_ok=True)
-                os.makedirs('predictions/numpy', exist_ok=True)
-                save_path = os.path.join('predictions/images', f'plot_{i}_{j}.png')
-                save_path_npy = os.path.join('predictions/numpy', f'plot_{i}_{j}.npy')
-                # print((print_npy[j].transpose(1, 2, 0)).shape)
-                np.save(save_path_npy, (print_npy[j].transpose(1, 2, 0))[:,:,0])
+                os.makedirs('/glb/hou/pt.sgs/data/ml_ai_us/uspcjc/models/deeplabV3SIMCLR/results_amendment_0716', exist_ok=True)
+                save_path = os.path.join('/glb/hou/pt.sgs/data/ml_ai_us/uspcjc/models/deeplabV3SIMCLR/results_amendment_0716', f'plot_{i}_{j}.png')
                 plt.savefig(save_path)  # Save each plot with a unique filename based on the loop index j
                 plt.close(fig)  # Close the figure to release memory  
             mean_miou.append(miou)

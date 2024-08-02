@@ -22,7 +22,7 @@ def initialize_data_loader(config):
     num_classes = train_set.num_classes
     train_loader = DataLoader(train_set, batch_size=config['training']['batch_size'], shuffle=True, num_workers=config['training']['workers'], pin_memory=True)
     val_loader = DataLoader(val_set, batch_size=config['training']['batch_size'], shuffle=False, num_workers=config['training']['workers'], pin_memory=True)
-    test_loader = DataLoader(test_set, batch_size=config['inference']['batch_size'], shuffle=False, num_workers=config['training']['workers'], pin_memory=True)
+    test_loader = DataLoader(test_set, batch_size=config['training']['batch_size'], shuffle=False, num_workers=config['training']['workers'], pin_memory=True)
 
     return train_loader, val_loader, test_loader, num_classes
 

@@ -43,7 +43,7 @@ def predict_on_test_set(args):
 
     config['network']['use_cuda'] = config['network']['use_cuda'] and torch.cuda.is_available()
 
-    predictor = Predictor(config, checkpoint_path='experiments/checkpoint_best.pth.tar')
+    predictor = Predictor(config, checkpoint_path='/glb/hou/pt.sgs/data/ml_ai_us/uspcjc/models/deeplabV3SIMCLR/experiments/checkpoint_best.pth.tar')
 
     predictor.inference_on_test_set()
 
@@ -61,7 +61,7 @@ def predict(args):
 
     config['network']['use_cuda'] = config['network']['use_cuda'] and torch.cuda.is_available()
 
-    predictor = Predictor(config, checkpoint_path='./checkpoint_best.pth.tar')
+    predictor = Predictor(config, checkpoint_path='/glb/hou/pt.sgs/data/ml_ai_us/uspcjc/models/deeplabV3SIMCLR/experiments/checkpoint_best.pth.tar')
 
     image, prediction = predictor.segment_image(filename)
     return image, prediction
