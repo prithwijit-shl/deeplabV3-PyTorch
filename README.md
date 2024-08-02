@@ -1,4 +1,14 @@
+## Parameters
 
+All the parameters of the model are in configs/config.yml. You only need to change the base_path 
+
+## Weights (for pretrained backbone ONLY)
+
+The current repo has support for ResNet18 SimCLR trained backbone. Any other backbone support can be added. You just need to build your CNN from pytorch as done in [resnet18.py](models/backbone/resnet18.py)
+You need to add the path to your SimCLR trained backbone ckpt in line 166
+```
+checkpoint_path = "/PATH/TO/SIMCLR/checkpoint.ckpt"
+```
 
 ## Train
 
