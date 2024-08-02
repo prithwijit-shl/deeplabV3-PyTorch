@@ -2,16 +2,11 @@
 
 ## Parameters
 
-All the parameters of the model are in configs/config.yml.
+All the parameters of the model are in configs/config.yml. You only need to change the base_path 
 
 ## Weights (for pretrained backbone ONLY)
 
-The trained weights can be found here:
-
-https://drive.google.com/drive/folders/1O8KLZa1AABlLS6DlkkzHOgPqvT89GB_9?usp=sharing
-
-
-The model can be trained with different backbones (resnet, xception, drn, mobilenet). The weights on the Drive has been trained with the ResNet backbone, so if you want to use another backbone you need to train from scratch (although the backbone weights are always pre-trained on ImageNet).
+The model can be trained with different backbones (resnet, xception, drn, mobilenet). The backbone weights are always pre-trained on ImageNet).
 
 
 ## Train
